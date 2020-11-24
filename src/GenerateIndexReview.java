@@ -1,31 +1,23 @@
-/*
-Matt Luettgen
-Modified version of IndexFiles.java to read all those in the list.
- */
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import java.util.Scanner;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.*;
 
 public class GenerateIndexReview {
     static void indexDoc(IndexWriter writer, HashMap<String, String> document, String[] fields, boolean[] textFields) throws IOException {
@@ -42,7 +34,6 @@ public class GenerateIndexReview {
         }
         writer.addDocument(lDoc);
     }
-
     //file path
     public static ArrayList<String[]> fileParser(String filePath, String[] fields) throws IOException, ParseException {
         ArrayList<String[]> documents = new ArrayList<>();
@@ -55,18 +46,7 @@ public class GenerateIndexReview {
             JSONObject jo = (JSONObject) obj;
             String[] document = new String[fields.length];
             for(int i = 0; i < fields.length; i++){
-                Object x = jo.get(fields[i]);
-                try{
-                    document[i] = (String) x;
-                }
-                catch(ClassCastException e1){
-                    try{
-                        document[i] = Double.toString((Double)x);
-                    }catch(ClassCastException e2){
-                        document[i] = Long.toString((Long)x);
-                    }
-                }
-
+                document[i] = (String) jo.get(fields[i]);
             }
             documents.add(document);
         }
@@ -76,13 +56,9 @@ public class GenerateIndexReview {
 
     public static void createLuceneIndex(String dataset, String[] fields, boolean textFields[]) throws IOException, ParseException {
         String filePath = "D:\\yelp_dataset\\yelp_dataset\\yelp_academic_dataset_" + dataset + ".json";
+        int n = fields.length;
+        ArrayList<HashMap<String, String>> documents = new ArrayList();
         File file = new File(filePath);
-        Analyzer analyzer  = new StandardAnalyzer();
-        String indexPath = "./index/" + dataset;
-        Directory dir = FSDirectory.open(Paths.get(indexPath));
-        IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
-        iwc.setOpenMode(OpenMode.CREATE);
-        IndexWriter writer = new IndexWriter(dir, iwc);
         if(file.exists()){
             ArrayList<String[]> fileDocs = fileParser(filePath, fields);
             for(String[] fileDoc: fileDocs) {
@@ -90,31 +66,28 @@ public class GenerateIndexReview {
                 for (int i = 0; i < fields.length; i++) {
                     document.put(fields[i], fileDoc[i]);
                 }
-                indexDoc(writer, document, fields, textFields);
+                documents.add(document);
             }
         }else{
             System.out.println("it no exist");
         }
-    }
-        //ArrayList<HashMap<String, String>> documents = new ArrayList();
-    /** Index all text files under a directory. */
-    public static void main(String[] args) throws IOException, ParseException {
-        //read through the corpus and add everything to documents.
-        String srcPath = "D:\\yelp_dataset\\yelp_dataset\\yelp-academic_dataset_";
-        String[] stringFields = new String[] {"review_id", "user_id", "business_id", "stars", "date", "text", "useful", "funny", "cool"};
-        boolean[] isTextFields = new boolean[] {false, false, false, false, false, true, false, false, false};
-        String dataset = "review";
-        createLuceneIndex(dataset, stringFields, isTextFields);
-
-        String indexPath = "./index/review";
-        IndexReader reader = null;
-        try {
-            reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));
-            //Print the toTAl number of documents in the corpus
-            System.out.println("Total number of documents in the corpus: " + reader.maxDoc());
-            System.out.println(reader.document(0).get("stars"));
-        } catch (IOException e) {
-            e.printStackTrace();
+        Analyzer analyzer  = new StandardAnalyzer();
+        String indexPath = "./index/" + dataset;
+        try{
+            System.out.println("Indexing to directory '" + indexPath + "'...");
+            Directory dir = FSDirectory.open(Paths.get(indexPath));
+            IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
+            iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+            IndexWriter writer = new IndexWriter(dir, iwc);
+            for (HashMap<String, String> document : documents) {
+                indexDoc(writer, document, fields, textFields);
+            }
+            writer.close();
+            System.out.println("Done ...");
+        }catch (IOException e) {
+            System.out.println(" caught a " + e.getClass() + "\n with message: " + e.getMessage());
         }
+
     }
+
 }
