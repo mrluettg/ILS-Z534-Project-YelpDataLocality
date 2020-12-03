@@ -78,7 +78,7 @@ public class GenerateIndexCore {
         String filePath = "D:\\yelp_dataset\\yelp_dataset\\yelp_academic_dataset_" + dataset + ".json";
         File file = new File(filePath);
         Analyzer analyzer  = new StandardAnalyzer();
-        String indexPath = "./index/core";
+        String indexPath = "D:\\yelp_dataset\\yelp_dataset\\index\\core";
         Directory dir = FSDirectory.open(Paths.get(indexPath));
         IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
         iwc.setOpenMode(OpenMode.CREATE);
@@ -108,7 +108,7 @@ public class GenerateIndexCore {
         String dataset = "review";
         createLuceneIndex(dataset, stringFields, isTextFields);
 
-        String indexPath = ".\\index\\core";
+        String indexPath = "D:\\yelp_dataset\\yelp_dataset\\index\\core";
         IndexReader reader = null;
         try {
             reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));

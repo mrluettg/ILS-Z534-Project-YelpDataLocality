@@ -72,7 +72,7 @@ public class GenerateIndexReview {
             System.out.println("it no exist");
         }
         Analyzer analyzer  = new StandardAnalyzer();
-        String indexPath = "./index/" + dataset;
+        String indexPath = "D:\\yelp_dataset\\yelp_dataset\\index\\" + dataset;
         try{
             System.out.println("Indexing to directory '" + indexPath + "'...");
             Directory dir = FSDirectory.open(Paths.get(indexPath));
