@@ -18,6 +18,7 @@ import java.util.Scanner;
 import java.time.LocalDate;
 
 public class CalculateLocals {
+    //
     public static ArrayList<String[]> fileParser(String filePath, String[] fields) throws IOException, ParseException {
         ArrayList<String[]> documents = new ArrayList<>();
         File file = new File(filePath);
@@ -272,8 +273,9 @@ public class CalculateLocals {
         //HashMap<String, String> businessStates = generateBusinessAreaHashMap();
         //System.out.println("generateUserBusinessHashMap()");
         //HashMap<String, ArrayList<String>> userReviewLocations = readUserBusinessDictFile();
-        System.out.println("calculateLocals()");
-        calculateLocals("NV");
+        //System.out.println("calculateLocals()");
+        //calculateLocals("NV");
+        fileParser("D:\\yelp_dataset\\yelp_dataset\\yelp_academic_dataset_user.json", new String[]{"business_id", "city", "state"});
 
     }
 }

@@ -40,6 +40,7 @@ public class OtherFeatures {
      */
 
     public static HashMap<String, Double[]> gatherBusinessInformation(String[] users, String state) throws IOException, org.json.simple.parser.ParseException {
+        System.out.println("gathering information from business file");
         HashMap<String, LinkedHashSet<Integer>> userReviews = CosineSimilarity.readUserReviewsHashMap(state);
         HashMap<String, LinkedHashSet<Integer>> businessReviews = CosineSimilarity.readBusinessReviewsHashMap(state);
         HashMap<Integer, String> reviewBusinesses = new HashMap<>();
@@ -92,6 +93,7 @@ public class OtherFeatures {
      */
 
     public static HashMap<Integer, Double[]> gatherReviewInformation(String[] users, String state) throws IOException, ParseException {
+        System.out.println("gathering information review business file");
         HashMap<String, LinkedHashSet<Integer>> userReviews = CosineSimilarity.readUserReviewsHashMap(state);
         LinkedHashSet<String> allReviewIds = new LinkedHashSet<>();
         HashMap<String, Integer> reviewLookup = CosineSimilarity.readIntegerReviewIds(state);
@@ -135,6 +137,7 @@ public class OtherFeatures {
      */
 
     public static HashMap<String, Double[]> calculateFeatures(String state) throws IOException, ParseException {
+        System.out.println("calculating features");
         HashMap<String, Double[]> featureSet = new HashMap<>();
         HashMap<String, Double> avgCosineDifference = getUserAvgCosine(state);
         HashMap<String, LinkedHashSet<Integer>> userReviews = CosineSimilarity.readUserReviewsHashMap(state);
@@ -190,6 +193,7 @@ public class OtherFeatures {
     }
 
     public static void writeDataSets(String state) throws IOException, ParseException {
+        System.out.println("writing datasets");
         String[] users = getUserAvgCosine(state).keySet().toArray(new String[0]);
         HashMap<String, Double[]> featureSet = calculateFeatures(state);
         LinkedHashSet<String> allUsers = new LinkedHashSet<>(Arrays.asList(users));
@@ -197,10 +201,10 @@ public class OtherFeatures {
         File file = new File(FILEPATH + "calculateLocals_output\\" + state + "\\calculateLocals_output_" + state + ".txt");
         Scanner scanner = new Scanner(file);
         int incrementer = 0;
-        FileWriter trainingWriter = new FileWriter(FILEPATH + "\\data\\" + state + "_training");
-        FileWriter validationWriter =  new FileWriter(FILEPATH + "\\data\\" + state + "_validation");
-        FileWriter testingWriter = new FileWriter(FILEPATH + "\\data\\" + state + "_testing");
-        FileWriter testingAnswersWriter =  new FileWriter(FILEPATH + "\\data\\" + state + "_testing_answers");
+        FileWriter trainingWriter = new FileWriter(FILEPATH + "\\data\\" + state + "_training.txt");
+        FileWriter trainingAnswersWriter =  new FileWriter(FILEPATH + "\\data\\" + state + "_training_answers.txt");
+        FileWriter testingWriter = new FileWriter(FILEPATH + "\\data\\" + state + "_testing.txt");
+        FileWriter testingAnswersWriter =  new FileWriter(FILEPATH + "\\data\\" + state + "_testing_answers.txt");
         while(scanner.hasNextLine()){
             String line = scanner.nextLine();
             String[] lineLst = line.split("\t");
@@ -212,16 +216,14 @@ public class OtherFeatures {
                 for(Double feature: features){
                     out.append("\t").append(feature);
                 }
-                if(incrementer % 10 == 9){
+                if(incrementer % 10 >= 7){
                     //testing
                     testingAnswersWriter.write(userId + "\t" + answer + "\n");
                     testingWriter.write(out.toString() + "\n");
                 }
-                if(incrementer % 10 == 8){
-                    validationWriter.write(out.toString() + "\t" + answer + "\n");
-                }
-                if(incrementer % 10 < 8){
-                    trainingWriter.write(out.toString() + "\t" + answer + "\n");
+                else{
+                    trainingAnswersWriter.write(userId + "\t" + answer + "\n");
+                    trainingWriter.write(out.toString() + "\n");
                 }
                 incrementer += 1;
             }
@@ -229,11 +231,12 @@ public class OtherFeatures {
         }
         trainingWriter.close();
         testingWriter.close();
-        validationWriter.close();
+        trainingAnswersWriter.close();
         testingAnswersWriter.close();
 
     }
     public static void main(String[] args) throws IOException, ParseException {
         writeDataSets("NV");
+
     }
 }

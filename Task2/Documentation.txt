@@ -1,0 +1,9 @@
+Yelp locality project documentation
+Files
+Calculate locals: 
+	Goal: to have a base of which users are local based on simple threshhold. 
+		Threshhold: 
+			The difference between the max and the min review in the area is more than a year. 
+			Over half of the reviews are from the area. 
+	
+		
