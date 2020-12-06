@@ -1,5 +1,5 @@
 Matt Luettgen
-(All code written by me unless otherwise specified.).
+(All code in task 2 written by me unless otherwise specified.).
 Yelp locality project documentation
 
 Summary 
