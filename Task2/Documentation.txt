@@ -1,5 +1,6 @@
 Matt Luettgen
 (All code in task 2 written by me unless otherwise specified.).
+(algorithm design was also me.)
 Yelp locality project documentation
 
 Summary 
@@ -23,8 +24,15 @@ Then we use a neural network with these features to try to find if they are loca
 	Then we evaluate with trec_eval	(like in assignment 2)
 		outputs of neural networks used for ranking. 
 
-Note that a lot of files have been removed because they are too large to upload to git. 
-The code to create these files is present in src, however. 
+Note:  lot of the intermediary output files have been removed because they are too large to upload to git. 
+	Most commonly ones that are for writing/reading various hashmaps, the yelp data itself, indexes, training/testing data, etc.  
+	Evaluation was kept
+	The code to create all these files is present in src, however. 
+	I can possibly email them to you if needed. 
+
+Note:  Classes must be done in order (indicated by numbers). All methods indicated by numbers within a class must be done in order. 
+	takes a really long time if you're actually going to go through it all.
+		(I've never done it all at the same time but probably at least an hour of processing). 
 
 Files: 
 (to be done in this order) 
@@ -245,7 +253,7 @@ Files:
 		also writes on in trec_eval format for evaluation (FILEPATH\evaluation). 
 Matrix.java
 	almost entirely from the tutorial I followed https://towardsdatascience.com/understanding-and-implementing-neural-networks-in-java-from-scratch-61421bb6352c
-	I wrote several more activation functions(guassian) and clone()
+	I wrote a second activation functions(guassian) and clone()
 	
 SimpleNeuralNetwork.java
 	mostly from the tutorial I followed, with some minor changes https://towardsdatascience.com/understanding-and-implementing-neural-networks-in-java-from-scratch-61421bb6352c
@@ -265,10 +273,10 @@ SimpleNeuralNetwork.java
 		using userResult class which implements comparable, we sort the results and write the file. 
 		
 Evaluation. 
-	uses trec_eval. from assignment 2, but I'm most interested in precision, recall 
+	uses trec_eval. from assignment 2, but I'm most interested in precision, recall (ranking not as important here). 
 	found in FILEPATH\evaluation. 
 		all tests named by activation function, learning rate, and hidden layer. 
-	Still have not found settings for the neural network that work, despite coding in data normalization, different activation functions, and different learning rates. 
+	Still have not found settings for the neural network that work, despite coding in data normalization, different activation functions, different learning rates, and batch sizes
 	In evaluation.txt in FILEPATH\data, which contains all the outputs of the Neural Network, the outputs are all very similar, 
 	Also, I print out the area with every epoch, however I have not found settings where the error decreases and does not jump up again. 
 	
