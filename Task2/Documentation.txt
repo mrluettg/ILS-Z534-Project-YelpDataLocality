@@ -241,6 +241,7 @@ Files:
 		calls calculateFeatures() and splits the data into training and testing sets,
 		writing both to files.
 		writes these to FILEPATH\data 
+		7-3 training-testing ratio
 		also writes on in trec_eval format for evaluation (FILEPATH\evaluation). 
 Matrix.java
 	almost entirely from the tutorial I followed https://towardsdatascience.com/understanding-and-implementing-neural-networks-in-java-from-scratch-61421bb6352c
