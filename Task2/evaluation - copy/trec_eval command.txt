@@ -1,0 +1,1 @@
+./trec_eval -m all_trec ../NV_qrels ../NV_gaussian_lr0.005_h6.txt

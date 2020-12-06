@@ -1,4 +1,3 @@
-import edu.stanford.nlp.util.FilePathProcessor;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -205,6 +204,7 @@ public class OtherFeatures {
         FileWriter trainingAnswersWriter =  new FileWriter(FILEPATH + "\\data\\" + state + "_training_answers.txt");
         FileWriter testingWriter = new FileWriter(FILEPATH + "\\data\\" + state + "_testing.txt");
         FileWriter testingAnswersWriter =  new FileWriter(FILEPATH + "\\data\\" + state + "_testing_answers.txt");
+        FileWriter trecEvalAnswers = new FileWriter(FILEPATH + "\\evaluation\\" + "state_qrels");
         while(scanner.hasNextLine()){
             String line = scanner.nextLine();
             String[] lineLst = line.split("\t");
@@ -225,6 +225,7 @@ public class OtherFeatures {
                     trainingAnswersWriter.write(userId + "\t" + answer + "\n");
                     trainingWriter.write(out.toString() + "\n");
                 }
+                trecEvalAnswers.write("1 0 " + state + "-" + userId + " " + answer + "\n");
                 incrementer += 1;
             }
 
@@ -237,6 +238,5 @@ public class OtherFeatures {
     }
     public static void main(String[] args) throws IOException, ParseException {
         writeDataSets("NV");
-
     }
 }

@@ -1,11 +1,9 @@
 import java.io.*;
-import java.nio.channels.ScatteringByteChannel;
 import java.util.*;
 
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.process.CoreLabelTokenFactory;
 import edu.stanford.nlp.process.PTBTokenizer;
-import edu.stanford.nlp.util.FilePathProcessor;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -212,7 +210,6 @@ public class CosineSimilarity {
         LinkedHashSet<String> users = getUsers(state);
         HashMap<String, Integer> reviewLookup = readIntegerReviewIds("NV");
         HashMap<String, HashMap<Integer, Integer>> terms = new HashMap<>();
-        //HashMap<String, Integer> frequencies = readFrequencyHashMap("NV");
         File reviewFile = new File(FILEPATH + "yelp_academic_dataset_review.json");
         Scanner reviewScanner = new Scanner(reviewFile);
         while(reviewScanner.hasNext()){
@@ -372,7 +369,7 @@ public class CosineSimilarity {
                 reviewBusinessHashMap.put(review, business);
             }
         }
-        System.out.println("actually doing the stuff");
+        System.out.println("Calculating average TFIDF for each business");
         HashMap<String, HashMap<Integer, Double>> businessAvgTFIDFVectors = new HashMap<>();
         for(String business: businesses){
             businessAvgTFIDFVectors.put(business, new HashMap<>());
@@ -500,13 +497,14 @@ public class CosineSimilarity {
         HashMap<String, LinkedHashSet<Integer>> userReviews = readUserReviewsHashMap(state);
         System.out.println("reading lengths hashmap");
         HashMap<Integer, Integer> lengths = readReviewLengthHashMap(state);
-        double N = lengths.size();
+        double N = lengths.size(); //number of reviews for tf-idf
         String[] users = userReviews.keySet().toArray(new String[0]);
         int userSize = users.length;
         System.out.println("reading business-review hashmap");
         HashMap<String, LinkedHashSet<Integer>> brs = readBusinessReviewsHashMap(state);
         String[] businesses = brs.keySet().toArray(new String[0]);;
         System.out.println("reversing business hashmap");
+        //review->business hashamp
         HashMap<Integer, String> reviewBusinessHashMap = new HashMap<>();
         for(String business: businesses){
             LinkedHashSet<Integer> reviews = brs.get(business);
@@ -528,14 +526,14 @@ public class CosineSimilarity {
                 String business = reviewBusinessHashMap.get(review);
                 batvUser.put(business, batv.get(business));
             }
-            double numReviews = reviews.size();
-            //scan through every reiew
-            double reviewSum = 0;
+            //scan through every review
+            double reviewSum = 0; //we're not counting reviews from business with only 1 review
             double csSum = 0;
             for(Integer review: reviews){
                 //don't count the review if there's only one review in a business (that being the said user's review).
                 //make sure there is at least one review for that business.
                 if(brs.get(reviewBusinessHashMap.get(review)).size() > 1){
+                    //find tf-idf for review.
                     HashMap<Integer, Double> tfidfVector = new HashMap<>();
                     double length = lengths.get(review);
                     int incrementer = 0;
@@ -556,6 +554,7 @@ public class CosineSimilarity {
                     reviewSum += 1;
                 }
             }
+            //write avg cosine similarity for user.
             double avgCs = csSum/reviewSum;
             if(reviewSum == 0){ avgCs = 0; }
             writer.write(user + "\t" + avgCs + "\n");
@@ -566,31 +565,23 @@ public class CosineSimilarity {
         }
         writer.close();
     }
-    public static void writeUserAvgCosineSimilarityHashMap(HashMap<String, Double> hm, String state) throws IOException {
-        FileWriter writer = new FileWriter(FILEPATH +  "dict\\" + state + "_user_avg_cosine_similarity.txt");
-        String[] keys = hm.keySet().toArray(new String[0]);
-        for(String key: keys){
-            writer.write(key + "\t" + hm.get(key) + "\n");
-        }
-        writer.close();
-    }
     public static void main(String[] args) throws IOException, ParseException {
-        //System.out.println("generating integer review ids");
-        //HashMap<String, Integer> lookup = generateIntegerReviewIds("NV");
-        //writeIntegerReviewIds(lookup, "NV");
-        //System.out.println("Writing business-Reviews HashMap");
-        //writeBusinessReviewsHashMap(generateBusinessReviewsHashMap("NV"), "NV");
-        //System.out.println("generating term-frequency hashmap");
-        //writeFrequencyHashMap(getFrequencies("NV"), "NV") ;
-        //System.out.println("generating term-(document-frequency)) HashMaps");
-        //writeTermDocumentFreqHashMap(generateTermDocumentFreqHashMap("NV"), "NV");
-        //System.out.println("generating review-length HashMap");
-        //writeReviewLengthHashMap(generateReviewLengthHashMap("NV"), "NV");
-        //System.out.println("generating Business-AvgTFIDFVectors" );
-        //writeBusinessAvgTFIDFVectors(generateBusinessAvgTFIDFVectors("NV"), "NV");
-        //System.out.println("generating user-review Vectors");
-        //HashMap<String, LinkedHashSet<Integer>> asdf = generateUserReviewsHashMap("NV");
-        //writeUserReviewsHashMap(generateUserReviewsHashMap("NV"), "NV");
+        System.out.println("generating integer review ids");
+        HashMap<String, Integer> lookup = generateIntegerReviewIds("NV");
+        writeIntegerReviewIds(lookup, "NV");
+        System.out.println("Writing business-Reviews HashMap");
+        writeBusinessReviewsHashMap(generateBusinessReviewsHashMap("NV"), "NV");
+        System.out.println("generating term-frequency hashmap");
+        writeFrequencyHashMap(getFrequencies("NV"), "NV") ;
+        System.out.println("generating term-(document-frequency)) HashMaps");
+        writeTermDocumentFreqHashMap(generateTermDocumentFreqHashMap("NV"), "NV");
+        System.out.println("generating review-length HashMap");
+        writeReviewLengthHashMap(generateReviewLengthHashMap("NV"), "NV");
+        System.out.println("generating Business-AvgTFIDFVectors" );
+        writeBusinessAvgTFIDFVectors(generateBusinessAvgTFIDFVectors("NV"), "NV");
+        System.out.println("generating user-review Vectors");
+        HashMap<String, LinkedHashSet<Integer>> asdf = generateUserReviewsHashMap("NV");
+        writeUserReviewsHashMap(generateUserReviewsHashMap("NV"), "NV");
         System.out.println("writing avg cosineSimilarity hashmap");
         generateUserAvgCosineSimilarityHashMap("NV");
     }

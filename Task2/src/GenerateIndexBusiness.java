@@ -28,6 +28,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
 
 public class GenerateIndexBusiness {
+    public static String FILEPATH = "D:\\yelp_dataset\\yelp_dataset\\" ;
     static void indexDoc(IndexWriter writer, HashMap<String, String> document, String[] fields, boolean[] textFields) throws IOException {
         // make a new, empty document
         Document lDoc = new Document();
@@ -64,7 +65,7 @@ public class GenerateIndexBusiness {
 
 
     public static void createLuceneIndex(String dataset, String[] fields, boolean textFields[]) throws IOException, ParseException {
-        String filePath = "D:\\yelp_dataset\\yelp_dataset\\yelp_academic_dataset_" + dataset + ".json";
+        String filePath = FILEPATH + "yelp_academic_dataset_" + dataset + ".json";
         int n = fields.length;
         ArrayList<HashMap<String, String>> documents = new ArrayList();
         File file = new File(filePath);
@@ -81,7 +82,7 @@ public class GenerateIndexBusiness {
             System.out.println("it no exist");
         }
         Analyzer analyzer  = new StandardAnalyzer();
-        String indexPath = "./index/" + dataset;
+        String indexPath = FILEPATH + "index\\" + dataset;
         try{
             System.out.println("Indexing to directory '" + indexPath + "'...");
             Directory dir = FSDirectory.open(Paths.get(indexPath));
@@ -102,12 +103,12 @@ public class GenerateIndexBusiness {
     /** Index all text files under a directory. */
     public static void main(String[] args) throws IOException, ParseException {
         //read through the corpus and add everything to documents.
-        String srcPath = "D:\\yelp_dataset\\yelp_dataset\\yelp-academic_dataset_";
+        String srcPath = FILEPATH + "yelp-academic_dataset_";
         String[] businessStringFields = new String[] {"business_id", "name", "city", "state"};
         boolean[] isTextFieldBusiness = new boolean[] {false, false, false, false};
         createLuceneIndex("business", businessStringFields, isTextFieldBusiness);
 
-        String indexPath = "./index/business";
+        String indexPath = FILEPATH + "index\\business";
         IndexReader reader = null;
         try {
             reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));

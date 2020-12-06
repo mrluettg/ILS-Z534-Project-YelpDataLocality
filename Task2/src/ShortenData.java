@@ -5,26 +5,26 @@ import java.io.*;
 import java.util.Scanner;
 
 
-public class DivideDatasets {
+public class ShortenData {
     public static void shortenDatasets(String state) throws IOException {
         String filePath = "D:\\yelp_dataset\\yelp_dataset\\calculateLocals_output\\" + state+ "\\calculateLocals_output_" + state +  ".txt";
         File file = new File(filePath);
         Scanner scanner = new Scanner(file);
-        String trainingPath = "D:\\yelp_dataset\\yelp_dataset\\calculateLocals_output\\" + state+ "\\" + state + "_calculateLocals_output_short.txt";
-        FileWriter trainingWriter = new FileWriter(trainingPath);
+        String outputPath = "D:\\yelp_dataset\\yelp_dataset\\calculateLocals_output\\" + state+ "\\" + state + "_calculateLocals_output_short.txt";
+        FileWriter outputWriter = new FileWriter(outputPath);
         int count = 0;
         int incrementer = 0;
         while(scanner.hasNextLine()){
             int i = incrementer % 100;
             String line = scanner.nextLine() + "\n";
             if (i % 100 < 5){
-                trainingWriter.write(line);
+                outputWriter.write(line);
                 count++;
             }
             incrementer ++;
         }
         //testingWriter.close();
-        trainingWriter.close();
+        outputWriter.close();
         //validationWriter.close();
         System.out.println(count + "/" + incrementer + " users selected");
     }

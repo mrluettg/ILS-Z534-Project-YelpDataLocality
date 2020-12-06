@@ -4,7 +4,7 @@
 import java.util.ArrayList;
 import java.util.List;
 
-class Matrix {
+class Matrix implements Cloneable{
     double[][] data;
     int rows;
     int cols;
@@ -92,8 +92,7 @@ class Matrix {
         }
     }
     public void sigmoid() {
-        for(int i=0;i<rows;i++)
-        {
+        for(int i=0;i<rows;i++) {
             for(int j=0;j<cols;j++)
                 this.data[i][j] = 1/(1+Math.exp(-this.data[i][j]));
         }
@@ -108,8 +107,28 @@ class Matrix {
                 temp.data[i][j] = this.data[i][j] * (1-this.data[i][j]);
         }
         return temp;
-
     }
+
+    //written by Matt Luettgen
+    public void gaussian() {
+        for(int i=0;i<rows;i++) {
+            for(int j=0;j<cols;j++)
+                this.data[i][j] = Math.exp(-Math.pow(this.data[i][j], 2));
+        }
+    }
+    //written by Matt Luettgen
+    //while dsigmoid is derivative is in terms of f(x),
+    //dgaussian is in terms of x, so we need the unchanged original, not the gaussian.
+    public Matrix dgaussian() {
+        Matrix temp=new Matrix(rows,cols);
+        for(int i=0;i< rows;i++) {
+            for(int j=0;j<cols;j++)
+                temp.data[i][j] = data[i][j] * (1-data[i][j]);
+        }
+        return temp;
+    }
+
+
     public static Matrix fromArray(double[]x) {
         Matrix temp = new Matrix(x.length,1);
         for(int i =0;i<x.length;i++)
@@ -125,5 +144,9 @@ class Matrix {
             }
         }
         return temp;
+    }
+    public Matrix clone() throws CloneNotSupportedException {
+        Matrix m = (Matrix)super.clone();
+        return m;
     }
 }
