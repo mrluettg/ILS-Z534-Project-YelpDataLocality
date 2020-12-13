@@ -21,6 +21,8 @@
   <component name="ChangeListManager">
     <list default="true" id="e63a37fc-879b-43a7-abfa-72aa202489ef" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/SimpleNeuralNetwork.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/SimpleNeuralNetwork.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tTests.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/tTests.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -101,6 +103,7 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="WindowStateProjectService">
     <state x="574" y="119" key="#com.intellij.ide.util.MemberChooser" timestamp="1607881760713">
@@ -111,22 +114,22 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="473" y="154" key="FileChooserDialogImpl/0.0.1536.824@0.0.1536.824" timestamp="1607878197320" />
-    <state width="726" height="170" key="GridCell.Tab.0.bottom" timestamp="1607887880190">
+    <state width="723" height="67" key="GridCell.Tab.0.bottom" timestamp="1607892399908">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="726" height="170" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1607887880190" />
-    <state width="726" height="170" key="GridCell.Tab.0.center" timestamp="1607887880190">
+    <state width="723" height="67" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1607892399908" />
+    <state width="723" height="67" key="GridCell.Tab.0.center" timestamp="1607892399907">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="726" height="170" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1607887880190" />
-    <state width="726" height="170" key="GridCell.Tab.0.left" timestamp="1607887880189">
+    <state width="723" height="67" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1607892399907" />
+    <state width="723" height="67" key="GridCell.Tab.0.left" timestamp="1607892399907">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="726" height="170" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1607887880189" />
-    <state width="726" height="170" key="GridCell.Tab.0.right" timestamp="1607887880190">
+    <state width="723" height="67" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1607892399907" />
+    <state width="723" height="67" key="GridCell.Tab.0.right" timestamp="1607892399907">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="726" height="170" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1607887880190" />
+    <state width="723" height="67" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1607892399907" />
     <state x="249" y="0" key="SettingsEditor" timestamp="1607877315841">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -137,11 +140,16 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="java-method">
           <url>file://$PROJECT_DIR$/src/SimpleNeuralNetwork.java</url>
-          <line>356</line>
+          <line>353</line>
           <properties class="SimpleNeuralNetwork" method="main">
             <option name="EMULATED" value="true" />
           </properties>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/SimpleNeuralNetwork.java</url>
+          <line>203</line>
+          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

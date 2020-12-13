@@ -1,0 +1,309 @@
+Matt Luettgen
+Task 2 documentation
+(All code written by me unless otherwise specified.).
+Yelp locality project documentation
+
+Summary 
+The goal of this task is to determine if users are local or a tourist based on information about reviews. 
+We cannot interview the users themselves to know for sure if they are local, so here we define local as a combination of two threshholds: 
+	1. that the user has left reviews in the area for at least a year (newest - oldest review in the area > one year)
+	2. that the user has at least 50% of their reviews in the area. 
+Then we use a neural network with these features to try to find if they are local or non-local. 
+	1. average cosine similarity between the user's reviews and the average reviews for the business (took the most time)
+		thought here is that visitors will leave reviews more different than the average as they don't know the area. 
+	2. average stars for the businesses the user reviewd. 
+		the local users know the area so they likely know better which restaurants are good. 
+	3. average (business stars - stars the user gave the business)
+		local users may be more or less critical of local businesses. 
+	4. average useful 
+		might be higher for locals, as they know the area and perhaps have visited the business multiple times. 
+	5. average cool (same as above)
+	6. average fun (same as above)
+	7. average latitude/longitude. 
+		visitors may stick to down town and areas with tourist attractions. 
+	Then we evaluate with trec_eval	(like in assignment 2)
+		outputs of neural networks used for ranking. 
+
+Note that a lot of files have been removed because they are too large to upload to git. 
+The code to create these files is present in src, however. 
+
+Files: 
+(to be done in this order) 
+(unused) GenerateIndexCore and GenerateIndexReview 
+	-created but ended up goind unused. 
+	-Lucene indexes turns out take up a lot of RAM space. 
+	-keeping them in here to show I know how to create the indexes. 
+	-write index to FILEPATH\index\(whichever index)
+1. GenerateBusinessIndex.java
+	Goal: to processes the data to be able to easily split it up in the future. 
+	-a bit outdated. Later in the project, I'd just create my own file that contains this information. 
+	-creates a Lucene index with only the StringFields "business_id", "name", "city", and "state"
+	indexDoc(IndexWriter writer, HashMap<String, String> document, String[] fields, boolean[] textFields)
+		adds a document to the writer. 
+		input hashMap is field -> value. 
+		fields[] specifies the fields to be entered. 
+		textFields are boolean values indicating if each field in fields[] is a textfield(true) or a string field(false)
+	fileParser(String filePath, String[] fields)
+		reads in a line (a json object) and gathers desired features. 
+		fields[] represents the name of each field to be collected from the file. 
+	createLuceneIndex(String dataset, String[] fields, boolean textFields[])
+		creates a Lucene index. 
+		"dataset" is the file from which the information is being collected. 
+		"fields" are the fields collected from the file. 
+		"textFieldsp[]" is a boolean array the same length as "fields" indicating if each field is a string field or text field. 
+		returns ArrayList<String>[] that represents each item in the file, with the String[] as the fields of the items collected, in the same order as fields[] 
+		writes to FILEPATH\index\business
+	main(String[] args) 
+		calls createLuceneIndex and creates the index. 
+		lso tests if it is properly written by reading it and printing the city of the first document. 
+2. CalculateLocals.java: 
+	Goal: to have a base of which users are local based on simple threshhold. 
+		Threshhold: 
+			The difference between the max and the min review in the area is more than a year. 
+			Over half of the reviews are from the area. 
+	Goal: to narrow data down to a particular city. 
+	fileParser(String filePath, String[] fields)
+		reads in a line (a json object) and gathers desired features. (same as in GenerateBusinessIndex.java)
+	generateBusinessAreaHashMap()
+		generates a HashMap with Business ID as key and the state as a value.
+		loops through the documents of the index created in GenerateIndexBusiness.java
+	trimBusinessAreaHashMap(HashMap<String, String> businessAreaHashMap, String state)
+		trims the HashMap created in generateBusinessAreaHashMap to only include business in a particular state. 
+	generateUserBusinessDateHashMap()
+		generates a HashMap<String, ArrayList<String[]>> where each key String is a user and 
+		value ArrayList<String[]> is the business and date of a review.
+	1. writeUserBusinessDateDictFile(HashMap<String, ArrayList<String[]>> dict)
+		writes this hashmap created in generateUserBusinessDateHashMap() to a file. 
+		writes to FILEPATH\dict\
+	readUserBusinessDateDictFile()
+		reads the file created by writeUserBusinessDateDictFile() and returns the HashMap. 
+	trimUserBusinessDateHashMap(HashMap<String, ArrayList<String[]>> userBusinessDateHashMap, HashMap<String, String> businessStateHashMap)
+		trims the hashmap created/read by generateUserBusinessDateHashMap/readUserBusinessDateDictFile.
+		output should have users that gave reviews in a particular state.  
+		Assumes trimBusinessAreaHashMap() has already been called on businessStateHashMap in the parameters. 
+	minMaxDateThreshold(ArrayList<String[]> bds)
+		takes in the business-date array hashmap of a user and determines of they are within the threshhold. (returns a boolean)
+		user must have at least two reviews in the area. 
+		user must have one years between their first and last review. 
+	generateUserCountHashMap()
+		reads through the user json file and pulls out the username and the review count for the user and puts it in a HashMap. 
+		returns HashMap<String, Integer> where value String is the user_id , Integer is the review_count. 
+	2. writeUserCountDictFile(HashMap<String,Integer> dict)
+		writes HashMap created by generateUserCountHashMap()
+		writes to FILEPATH\dict\
+	readUserCountDictFile() 
+		reads the HashMap written by writeUserCountDictFile(HashMap<String,Integer> dict)
+	3. calcualteLocals(String state)
+		for a single state, 
+		finds the business in the state
+			(reads BusinessAreaHashmap)
+		finds the reviews and locations of that review for each user. 
+			(reads userReviewLocations hashmap)
+		filters out users that do not have reviews in the particular state. 
+			(calls trimUserBusinessDateHashMap)
+		finds the number of reviews for each user. 
+			(calls readUserCountDictFile())
+		finds which usersare within the threshhold
+			calls minMaxDateThreshold();
+			and checks that the local reviews/ the total reviews is greater than .5. 
+			(it's AND, not OR)
+		writes the result for each user to a file.
+			to FILEPATH\calculateLocals_output 
+3. ShortenData.java
+	Goal: to shorten the output of CalculateLocals.java to a size that can be easily process. 
+	shortenDatasets(String state)
+		trims the data by reading the calculateLocals_output.java
+	I find that for the state of Nevada, only selecting 1/20 users is a manageable size. 
+	writes to FILEPATH\calculateLocals_output
+4. CosineSimilarity.java
+	Goal: for each user, find the average cosine similarity of each user's review to the average review for that business. 
+		- first find the average review for each business. (create a tf-idf vector for each review, sum them up, then divide it by the total number of reviews for the business).
+			tf-idf as in Assignment 2, (c(term, doc)/length(doc) + 1+log(N/k(t) 
+			(length = length of review, c = count of term in review, N = total reviews for the state, k(t) = total review in state that have term. 
+		- find the tf-idf vector of each user's review. 
+		- tf-idf vectors represented by HashMap<Integer, Integer> where the key is the position of the term in the vector and the value is a term. 
+		-for each user, find the cosine similarity for each review for the average review.
+		-if the business has only one review (that being the user's), don't count it towards the user's total 
+		-average this for each user, output it. 
+		-thought here is that if a user's review is really different from the average review for that business, not local. 
+			(locals know what to order at restaurant, for example). 
+	getUsers(String state) reads in the output of ShortenData.java (or CalculateLocals.java if you like Heap Space errors) and returns a 
+	writeStringIntegerHashMap(HashMap<String, Integer> hm, String filePath)
+		-helper to avoid repetitive code. 
+	readStringIntegerHashMap(String filePath)
+		-helper to avoid repetitive code. 
+	writeStringIntegerLhsHashMap(HashMap<String, LinkedHashSet<Integer>> hm, String filePath)
+		-helper to avoid repetitive code. 
+	readStringIntegerLhsHashMap(String filePath)
+		-helper to avoid repetitive code. 
+	generateIntegerReviewIds(String state)
+		-generates a lookup for reviewIds to save on space.
+		-HashMap from a String representing the old String id to an Integer representing the new Integer id.
+	1. writeIntegerReviewIds(HashMap<String, Integer> frequencies, String state)
+		writes hashmap created by generateIntegerReviewIds(String state)
+		to FILEPATH\dict	
+	readIntegerReviewIds(String state)
+		reads hashmap written by writeIntegerReviewIds
+	getFrequencies(String state)
+		generates a term -> count HashMap<String, Integer>
+	2. writeFrequencyHashMap(HashMap<String, Integer> frequencies, String state)
+		writes hashmap created by getFrequencies() 
+		to FILEPATH\dict
+	readFrequencyHashMap(String state) 
+		reads hashmap written by writeFrequencyHashMap()
+	generateBusinessReviewsHashMap(String state)
+		creates a HashMap<String, LinkedHashSet<Integer>>
+			where the key String is a business ID
+			and the LinkedHashSet<Integer> is all the Integer review ID's of reviews for the business. 
+	3. writeBusinessReviewsHashMap(HashMap<String, LinkedHashSet<Integer>> brs, String state)
+		writes the hashmap generated by generateBusinessReviewsHashMap(String state)
+		writes to FILEPATH\dict
+	readBusinessReviewsHashMap(String state) 
+		reads HashMap written by writeBusinessReviewsHashMap()
+	generateTermDocumentFreqHashMap(String state)
+		HashMap: String term -> (Integer review -> Integer term-count)
+		Structure of HashMap<String term, HashMap<String review_id, Integer term_count>>
+		this way k(t) (number of documents have term t) can be found by tdf.get(term).size()
+		and c(t, doc) (number of term t in document d) can be found by tdf.get(term).get(doc)
+		particular to a state.
+		reads through yelp_academic_dataset_review.json, 
+		for each review of each users found by getUsers(), 
+		uses PTBTokenizer from Stanford NLP
+		adds term, review, and review count to the HashMap. 
+	4. writeTermDocumentFreqHashMap(HashMap<String, HashMap<Integer, Integer>> terms, String state)
+		writes hashmap generated by generateTermDocumentFreqHashMap()
+		writes to FILEPATH\dict
+	readTermDocumentFreqHashMap(String state)
+		reads HashMap written by riteTermDocumentFreqHashMap()
+	generateReviewLengthHashMap(String state)
+		generates HashMap<Integer, Integer> where key is review and value is the length of the review. 
+	5. writeReviewLengthHashMap(HashMap<Integer, Integer> lengths, String state)
+		writes the HashMap generated by generateReviewLengthHashMap()
+		writes to FILEPATH\dict
+	readReviewLengthHashMap(String state)
+		reads hashmap written by writeReviewLengthHashMap()
+	generateBusinessAvgTFIDFVectors(String state)
+		as described above calculates the average tfidf vector for each business. 
+		takes the business-review hashmap, the term-review-frequency hashmap, the lengths hashmap
+		iterates through terms and reviews, finds the tf-idf for that term-review pair, then adds tfidf/number-of-business-reviews to the business vector. 
+		returns this "vector"
+		vector is really a HashMap<Integer, Double>>: business ->(term -> tf-idf) 
+	6. writeBusinessAvgTFIDFVectors(HashMap<String, HashMap<Integer, Double>>)
+		writes the HashMap<String, HashMap<Integer, Double>> generated by generateBusinessAvgTFIDFVectors()
+		writes to FILEPATH\dict
+	readBusinessAvgTFIDFVectors(String state) 
+		reads the HashMap written by writeBusinessAvgTFIDFVectors()
+	generateUserReviewsHashMap(String state)
+		like writeBusinessReviewsHashMap() but does this for users. 
+		HashMap<String, LinkedHashSet<Integer>>: user -> reviews 
+	7. writeUserReviewsHashMap(HashMap<String, LinkedHashSet<Integer>> lhs, String state)
+		writes ites the HashMap<String, HashMap<String, LinkedHashSet<Integer>> generated by generateUserReviewsHashMap()
+		writes to FILEPATH\dict
+	readUserReviewsHashMap()
+		reads the HashMap written by writeUserReviewsHashMap()
+	8. generateUserAvgCosineSimilarityHashMap(String state)
+		reads user-reviews hashmap, review-lengths hashmap, business-reviews hashmap, term-document-frequency hashmap, business-tfidf-vector hashmap, 
+		find the tf-idf vector for each review for each user. 
+		and generates the average cosine difference between each user's review and the average tfidf vector of the business for that review. 
+		do not count businesses that have only one review. 
+		writes directly to file (FILEPATH\dict\)
+5. OtherFeatuers.java
+	Goal: find other features for neural network. 
+		0    avg cosine difference						(state above somewhere). 
+     		1    avg reviewed business stars					(locals might know which places are best)
+     		2    avg difference b/t rating user gave and business stars		(locals might be more skeptical/trusting of hometown business)
+     		3    avg useful								(might be higher in locals)
+     		4    avg funny								(might be higher in either)
+     		5    avg cool								(might be higher in either)
+		6    avg review count(business)						(tourists more likely to go to popular tourists restaurants and destinations). 
+     		7    avg reviewed business longitude 					(tourists/visitors will more likely be downtown)
+     		8    avg reviewed business latitude					(same as above)
+	Goal: to split data into training and testing groups.
+	getUserAvgCosine(String state)
+		reads the average cosine similarity generated by CosineSimilarity.java
+	gatherBusinessInformation(String[] users, String state)
+		reads through yelp_academic_dataset_business.json and gets important business information.
+			0	review count
+     			1	stars
+     			2	latitude
+     			3	longitude
+		returns this as HashMap<String, double[]>
+	gatherReviewInformation(String[] users, String state) 
+		reads through yelp_academic_dataset_review.json and gets important review information.
+			0 	stars
+			1 	useful
+			2	funny
+			3	cool
+		returns this as HashMap<String, double[]>
+	calculateFeatures(String state)
+		calls gatherBusinessInformation, gatherReviewInformation, and getUserAvgCosine
+		calculates the features as stated above
+		returns this as a HashMap<String, double[]> user->features(in order as above)
+	writeDataSets(String state)
+		calls calculateFeatures() and splits the data into training and testing sets,
+		writing both to files.
+		7-1.5-1.5 training-validation-testing ratio
+		writes these to FILEPATH\data 
+		also writes on in trec_eval format for evaluation (FILEPATH\evaluation). 
+		also groups splits data into local and non-locals to compare means with tTests.java (FILEPATH\data\NV_allLocals, or NV_allNonLocals). 
+		
+Matrix.java
+	almost entirely from the tutorial I followed https://towardsdatascience.com/understanding-and-implementing-neural-networks-in-java-from-scratch-61421bb6352c
+	I wrote another activation function (guassian) and clone()
+tTests.java
+	goal: compare the means, sd's of various datasets to see if they are significantly different. 
+	readFile(String state):  reads in FILEPATH\data\NV_allLocals
+	transpose(): transposes array
+	findMean(): finds the mean of an array
+	findSd(): finds the standard deviation of an array. 
+	tTest(): performs a TTest
+	run(): for each feature, prints the mean, sd of both local and non local and does t test for comparison. 
+SimpleNeuralNetwork.java
+	mostly from the tutorial I followed, with some minor changes https://towardsdatascience.com/understanding-and-implementing-neural-networks-in-java-from-scratch-61421bb6352c
+	modified it to fit this dataset. 
+	Wrote a method to standardize the data. (y = (x - mean) / standard_deviation)
+	functions/classes I coded: 
+		readData() - reads dataset (from otherFeatures.java) without correct labels 
+		readAnswers() - reads the correct labels (from calculateLocals)
+		findMeans(double[][] double2DArray)
+		standardizeData(double[][] double2DArray) standardizes the data standardize the data. (y = (x - mean) / standard_deviation)
+		getUsers(String data, String state) - gets all the training, testing, or validation users for a state.  
+		print2DArray - basic print method. 
+		userResult class -
+			a "search result" that the algorithm selects as relevant. 
+			holds userdId, resultNum (output of Neural netowrk), and answer. 
+			Sortable (implements comparable) for ordering results in trec_eval. 
+			comparable by resultNum (output of neural network). 
+		NNRun
+			represents a run of the neural network, and how accurate the outcome was for the validation data. 
+		
+		runNeuralNetwork(String state, int[] featuresToInclude, int epochs, String activationFunction, int hiddenNodes, double learningRate): 
+			state- metro area data comes from. 
+			epochs- how many steps the NN takes before stopping at (hopefully) the minimum. 
+			activationFunction - "sigmoid" and "gaussian" implemented
+			hiddenNodes - nodes in the single hidden layer. 
+			learningRate - size of the steps taken by the neural network. 
+			An outcome of training and testing the neural network on the validation data. 
+			Sortable so you can easily select the maximum in a list (for selecting the best performing in runNetworkNTimes.)
+		runNetworkNTimes(int numRuns, ....... ) 
+			runs runNeuralNetwork numRuns times and selects the NNRun with the best results (Maximum f score). 
+		evaluateBestNN
+			calls runNetworkNTimes to find the network that perfomed best on validation data. 
+			evaluates this network on the testing data. 
+			writes trec_eval file FILEPATH\evaluation	
+	funtions i modified: 
+		train(double[] X, double [] Y, String activationFunction) - now can use various activation functions. 
+		fix, train, NeuralNetwork constructor - created more input parameters, so I can modify the learning rate, the activation function, the amount of hidden layers, and the epochs at one location
+
+
+Evaluation. 
+	uses trec_eval. from assignment 2,
+	found in FILEPATH\evaluation. 
+		all tests named by activation function, learning rate, and hidden layer. 
+	The best settings I can find have a very large number of hidden nodes (81 I currently have it I think), learning rate of 0.01. 
+	Still only tends to get ~.65 precision and <.1 recall. 
+	
+
+	
+		
+		

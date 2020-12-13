@@ -198,7 +198,11 @@ public class SimpleNeuralNetwork {
             this.precision = precision;
             this.recall = recall;
             this.accuracy = accuracy;
-            this.F = 2*(precision * recall)/(precision + recall);
+            if(precision == 0.0 || recall == 0.0){
+                this.F = 0;
+            }else{
+                this.F = 2*(precision * recall)/(precision + recall);
+            }
         }
         @Override
         public int compareTo(NNRun o) {
@@ -212,23 +216,12 @@ public class SimpleNeuralNetwork {
             System.out.println("\tFScore: " + F);
         }
     }
-    public static NNRun runNeuralNetwork(String state, int[] featuresToInclude, int epochs, String activationFunction, int hiddenLayers, double learningRate) throws IOException, CloneNotSupportedException {
-        /**
-         * features to include:
-         * 0    avg cosine difference
-         * 1    avg reviewed business stars
-         * 2    avg difference b/t rating user gave and business stars
-         * 3    avg useful/reviewCount(business)
-         * 4    avg funny/reviewCount(business)
-         * 5    avg cool/reviewCount(business)
-         * 6    avg review count(business)
-         * 7    avg reviewed business longitude
-         * 8    avg reviewed business latitude
-         */
+    public static NNRun runNeuralNetwork(String state, int[] featuresToInclude, int epochs, String activationFunction, int hiddenNodes, double learningRate) throws IOException, CloneNotSupportedException {
+
         //Lowest one in OtherFeatures.java.
         double[][] trainingData = readData("training", featuresToInclude, state);
         double[][] trainingAnswers = readAnswers("training", state);
-        NeuralNetwork nn = new NeuralNetwork(6, hiddenLayers, 1, learningRate);
+        NeuralNetwork nn = new NeuralNetwork(6, hiddenNodes, 1, learningRate);
         nn.fit(trainingData, trainingAnswers, epochs, activationFunction);
 
         double[][] validationData = readData("validation", featuresToInclude, state);
@@ -277,10 +270,10 @@ public class SimpleNeuralNetwork {
         //write a trec_eval file.
         Collections.sort(results);
         Collections.reverse(results);
-        FileWriter trecWriter = new FileWriter(FILEPATH + "evaluation\\"+ state + "_" + activationFunction + "_lr" + learningRate + "_h" + hiddenLayers + ".txt");
+        FileWriter trecWriter = new FileWriter(FILEPATH + "evaluation\\"+ state + "_" + activationFunction + "_lr" + learningRate + "_h" + hiddenNodes + ".txt");
         for(int i = 0; i < results.size(); i++){
             UserResult result = results.get(i);
-            trecWriter.write("1 0 " + state + "-" + result.userId + " " + (i + 1) + " " + result.resultNum + " " + activationFunction + "_lr" + learningRate + "_h" + hiddenLayers + "\n");
+            trecWriter.write("1 0 " + state + "-" + result.userId + " " + (i + 1) + " " + result.resultNum + " " + activationFunction + "_lr" + learningRate + "_h" + hiddenNodes + "\n");
         }
         trecWriter.close();
         System.out.println("results size: " + results.size());
@@ -290,18 +283,22 @@ public class SimpleNeuralNetwork {
 
     }
     //trains a neural network and returns the run with the highest F score.
-    public static NNRun runNetworkNTimes(int numRuns, String state, int[] featuresToInclude, int epoch, String activationFunction, int hiddenLayers, double learningRate) throws IOException, CloneNotSupportedException {
+    public static NNRun runNetworkNTimes(int numRuns, String state, int[] featuresToInclude, int epoch, String activationFunction, int hiddenNodes, double learningRate) throws IOException, CloneNotSupportedException {
         ArrayList<NNRun> runs = new ArrayList<>();
         for(int i = 0; i < numRuns; i++){
-            runs.add(runNeuralNetwork(state, featuresToInclude, epoch, activationFunction, hiddenLayers, learningRate));
+            runs.add(runNeuralNetwork(state, featuresToInclude, epoch, activationFunction, hiddenNodes, learningRate));
         }
         Collections.sort(runs);
         Collections.reverse(runs);
         return runs.get(0);
     }
     //finds the best Neural Network model after training 100 times. Evaluates the result on a new dataset.
-    public static NNRun evaluateBestNN(String state, int[] featuresToInclude, int epoch, String activationFunction, int hiddenLayers, double learningRate) throws IOException, CloneNotSupportedException {
-        NeuralNetwork nn = runNetworkNTimes(100, state, featuresToInclude, epoch, activationFunction, hiddenLayers, learningRate).model;
+    public static NNRun evaluateBestNN(String state, int[] featuresToInclude, int epoch, String activationFunction, int hiddenNodes, double learningRate) throws IOException, CloneNotSupportedException {
+        NNRun best = runNetworkNTimes(100, state, featuresToInclude, epoch, activationFunction, hiddenNodes, learningRate);
+        System.out.println("Best NN on validation: ");
+        best.display();
+        NeuralNetwork nn = best.model;
+
         double[][] testingData = readData("testing", featuresToInclude, state);
         double[][] testingAnswers = readAnswers("testing", state);
         FileWriter writer = new FileWriter(FILEPATH + "data\\" + state + "_evaluation.txt");
@@ -346,16 +343,29 @@ public class SimpleNeuralNetwork {
          //write a trec_eval file.
          Collections.sort(results);
          Collections.reverse(results);
-         FileWriter trecWriter = new FileWriter(FILEPATH + "evaluation\\"+ state + "_" + activationFunction + "_lr" + learningRate + "_h" + hiddenLayers + ".txt");
+         FileWriter trecWriter = new FileWriter(FILEPATH + "evaluation\\"+ state + "_" + activationFunction + "_lr" + learningRate + "_h" + hiddenNodes + ".txt");
          for(int i = 0; i < results.size(); i++){
          UserResult result = results.get(i);
-         trecWriter.write("1 0 " + state + "-" + result.userId + " " + (i + 1) + " " + result.resultNum + " " + activationFunction + "_lr" + learningRate + "_h" + hiddenLayers + "\n");
+         trecWriter.write("1 0 " + state + "-" + result.userId + " " + (i + 1) + " " + result.resultNum + " " + activationFunction + "_lr" + learningRate + "_h" + hiddenNodes + "\n");
          }
          trecWriter.close();
          return new NNRun(nn, precision, recall, accuracy);
     }
     public static void main(String[] args) throws IOException, CloneNotSupportedException {
-        NNRun best = evaluateBestNN("NV", new int[] {0, 1, 2, 6, 7, 8}, 10000, "sigmoid", 16, .001);
+        /**
+         * features to include:
+         * 0    avg cosine difference
+         * 1    avg reviewed business stars
+         * 2    avg difference b/t rating user gave and business stars
+         * 3    avg useful/reviewCount(business)
+         * 4    avg funny/reviewCount(business)
+         * 5    avg cool/reviewCount(business)
+         * 6    avg review count(business)
+         * 7    avg reviewed business longitude
+         * 8    avg reviewed business latitude
+         */
+        NNRun best = evaluateBestNN("NV", new int[] {0, 1, 2, 6, 7, 8}, 10000, "sigmoid", 81, .001);
+        System.out.println("Best NN on testing: ");
         best.display();
     }
 }

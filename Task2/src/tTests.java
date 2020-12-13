@@ -72,7 +72,6 @@ public class tTests {
                     " localSd: " + localSd +
                     " nonLocalSd: " + nonLocalSd +
                     " tTest p value: " + pValue);
-
         }
     }
     public static void main(String[] args) throws FileNotFoundException {
