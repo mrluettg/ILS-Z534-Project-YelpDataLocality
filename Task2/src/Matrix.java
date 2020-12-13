@@ -1,6 +1,6 @@
-
+//Matt Luettgen
 //pretty much exactly from this Neural Network tutorial https://towardsdatascience.com/understanding-and-implementing-neural-networks-in-java-from-scratch-61421bb6352c
-
+//added gaussian stuff and clone()
 import java.util.ArrayList;
 import java.util.List;
 

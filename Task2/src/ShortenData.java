@@ -1,5 +1,6 @@
 /**
- * splits the users into a 8-1-1 training-testing-validation ratio.
+ * Matt Luettgen
+ * 
  */
 import java.io.*;
 import java.util.Scanner;

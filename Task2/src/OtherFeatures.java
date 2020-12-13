@@ -132,8 +132,9 @@ public class OtherFeatures {
      * 3    avg useful/reviewCount(business)
      * 4    avg funny/reviewCount(business)
      * 5    avg cool/reviewCount(business)
-     * 6    avg reviewed business longitude
-     * 7    avg reviewed business latitude
+     * 6    avg review count(business)
+     * 7    avg reviewed business longitude
+     * 8    avg reviewed business latitude
      */
 
     public static HashMap<String, Double[]> calculateFeatures(String state) throws IOException, ParseException {
@@ -154,7 +155,7 @@ public class OtherFeatures {
             }
         }
         for(String user: users){
-            Double[] features = new Double[8];
+            Double[] features = new Double[9];
             features[0] = avgCosineDifference.get(user);
             LinkedHashSet<Integer> reviews = userReviews.get(user);
             double userNumReviews = reviews.size();
@@ -163,6 +164,7 @@ public class OtherFeatures {
             double avgUseful = 0;
             double avgFunny = 0;
             double avgCool = 0;
+            double avgReviewCount = 0;
             double avgLatitude = 0;
             double avgLongitude = 0;
             for(Integer review: reviews){
@@ -178,65 +180,138 @@ public class OtherFeatures {
                 avgRatingDifference += (businessInfo[1] - reviewInfo[0]);
                 avgLatitude += businessInfo[2]/userNumReviews;
                 avgLongitude += businessInfo[3]/userNumReviews;
+                avgReviewCount += businessInfo[0]/userNumReviews;
             }
             features[1] = avgReviewedBusinessStars;
             features[2] = avgRatingDifference;
             features[3] = avgUseful;
             features[4] = avgFunny;
             features[5] = avgCool;
-            features[6] = avgLatitude;
-            features[7] = avgLongitude;
+            features[6] = avgReviewCount;
+            features[7] = avgLatitude;
+            features[8] = avgLongitude;
             featureSet.put(user, features);
         }
 
         return featureSet;
+    }
+    public static double[] findMeans(HashMap<String, Double[]> userFeatures){
+        String[] users = userFeatures.keySet().toArray(new String[0]);
+        double[] means = new double[userFeatures.get(users[0]).length];
+        double N = userFeatures.size();
+        for(String user: users){
+            Double[] features = userFeatures.get(user);
+            for(int i = 0; i < features.length; i++){
+                means[i] += features[i]/N;
+            }
+        }
+        return means;
+    }
+    public static double[] findStandardDeviations(HashMap<String, Double[]> userFeatures, double[] means){
+        int numFeatures = means.length;
+        double N = userFeatures.size();
+        String[] users = userFeatures.keySet().toArray(new String[0]);
+        double[] sds = new double[numFeatures];
+        for(String user: users){
+            Double[] features = userFeatures.get(user);
+            for(int i = 0; i < numFeatures;  i++){
+                sds[i] += Math.pow(means[i] - features[i], 2)/N;
+            }
+        }
+        for(int i = 0; i < numFeatures; i++){
+            sds[i] = Math.sqrt(sds[i]);
+        }
+        return sds;
+    }
+
+    public static HashMap<String, Double[]> standardizeData(HashMap<String, Double[]> userFeatures){
+        HashMap<String, Double[]> standardizedUserFeatures = new HashMap<>();
+        double[] means = findMeans(userFeatures);
+        double[] sds = findStandardDeviations(userFeatures, means);
+        String[] users = userFeatures.keySet().toArray(new String[0]);
+        int numFeatures = means.length;
+        for(String user: users){
+            Double[] features = userFeatures.get(user);
+            Double[] newFeatures = new Double[numFeatures];
+            for(int i = 0; i < numFeatures; i++){
+                newFeatures[i] = (features[i] - means[i])/sds[i];
+            }
+            standardizedUserFeatures.put(user, newFeatures);
+
+        }
+        return standardizedUserFeatures;
     }
 
     public static void writeDataSets(String state) throws IOException, ParseException {
         System.out.println("writing datasets");
         String[] users = getUserAvgCosine(state).keySet().toArray(new String[0]);
         HashMap<String, Double[]> featureSet = calculateFeatures(state);
+        HashMap<String, Double[]> standardizedFeatureSet = standardizeData(featureSet) ;
         LinkedHashSet<String> allUsers = new LinkedHashSet<>(Arrays.asList(users));
         HashMap<String, Integer> answers = new HashMap<>();
         File file = new File(FILEPATH + "calculateLocals_output\\" + state + "\\calculateLocals_output_" + state + ".txt");
         Scanner scanner = new Scanner(file);
         int incrementer = 0;
+        //for neural network
         FileWriter trainingWriter = new FileWriter(FILEPATH + "\\data\\" + state + "_training.txt");
         FileWriter trainingAnswersWriter =  new FileWriter(FILEPATH + "\\data\\" + state + "_training_answers.txt");
         FileWriter testingWriter = new FileWriter(FILEPATH + "\\data\\" + state + "_testing.txt");
         FileWriter testingAnswersWriter =  new FileWriter(FILEPATH + "\\data\\" + state + "_testing_answers.txt");
+        FileWriter validationWriter = new FileWriter(FILEPATH + "\\data\\" + state + "_validation.txt");
+        FileWriter validationAnswersWriter = new FileWriter(FILEPATH + "\\data\\" + state + "_validation_answers.txt");
+        //for trec_eval
         FileWriter trecEvalAnswers = new FileWriter(FILEPATH + "\\evaluation\\" + "state_qrels");
+        //for t test
+        FileWriter allLocals = new FileWriter(FILEPATH + "\\data\\" + state + "_allLocals.txt");
+        FileWriter allNonLocals = new FileWriter(FILEPATH + "\\data\\" + state + "_allNonLocals.txt");
         while(scanner.hasNextLine()){
             String line = scanner.nextLine();
             String[] lineLst = line.split("\t");
             String userId = lineLst[1];
             if(allUsers.contains(userId)){
                 String answer = lineLst[2];
-                Double[] features = featureSet.get(userId);
+                Double[] features = standardizedFeatureSet.get(userId);
                 StringBuilder out = new StringBuilder(userId);
                 for(Double feature: features){
                     out.append("\t").append(feature);
                 }
-                if(incrementer % 10 >= 7){
-                    //testing
-                    testingAnswersWriter.write(userId + "\t" + answer + "\n");
-                    testingWriter.write(out.toString() + "\n");
+                if(incrementer % 100 >= 70){
+                    //testing and validation
+                    if(incrementer % 100 >= 85){
+                        testingAnswersWriter.write(userId + "\t" + answer + "\n");
+                        testingWriter.write(out.toString() + "\n");
+                    }else{
+                        validationAnswersWriter.write(userId + "\t" + answer + "\n");
+                        validationWriter.write(out.toString() + "\n");
+                    }
+
                 }
                 else{
                     trainingAnswersWriter.write(userId + "\t" + answer + "\n");
                     trainingWriter.write(out.toString() + "\n");
                 }
+
+
                 trecEvalAnswers.write("1 0 " + state + "-" + userId + " " + answer + "\n");
+                if(Integer.parseInt(answer) == 1){
+                    allLocals.write(out.toString() + "\n");
+                }else{
+                    allNonLocals.write(out.toString() + "\n");
+                }
+
                 incrementer += 1;
             }
-
         }
         trainingWriter.close();
         testingWriter.close();
         trainingAnswersWriter.close();
         testingAnswersWriter.close();
-
+        validationWriter.close();
+        validationAnswersWriter.close();
+        allLocals.close();
+        allNonLocals.close();
     }
+
     public static void main(String[] args) throws IOException, ParseException {
         writeDataSets("NV");
     }

@@ -66,6 +66,7 @@ public class SimpleNeuralNetwork {
             Matrix target = Matrix.fromArray(Y);
 
             Matrix error = Matrix.subtract(target, output);
+            //System.out.println("error: " + error.data[0][0]);
             Matrix gradient = null;
             if(activationFunction.equals("sigmoid")){ gradient = output.dsigmoid();}
             else{
@@ -76,7 +77,6 @@ public class SimpleNeuralNetwork {
 
             gradient.multiply(error);
             gradient.multiply(l_rate);
-            System.out.println("error: " + error.data[0][0]);
 
             Matrix hidden_T = Matrix.transpose(hidden);
             Matrix who_delta = Matrix.multiply(gradient, hidden_T);
@@ -111,21 +111,20 @@ public class SimpleNeuralNetwork {
     }
     //stuff I actually coded:
     //reads in the output of OtherFeatures. gets data.
-    public static double[][] readData(String dataset, int batchSize, String state) throws FileNotFoundException {
+    public static double[][] readData(String dataset, int[] featuresToInclude, String state) throws FileNotFoundException {
         List<double[]> lst = new ArrayList<>();
         Scanner scanner = new Scanner(new File(FILEPATH + "\\data\\" + state + "_" + dataset + ".txt"));
         int N = 0;
-        int incrementer = 0;
+        int numFeatures = featuresToInclude.length;
         while(scanner.hasNext()){
             String line = scanner.nextLine();
             String[] user = line.split("\t");
-            double[] userData = new double[user.length - 1];
-            for(int i = 1; i < user.length; i++){
-                userData[i - 1] = Double.parseDouble(user[i]);
+            double[] userData = new double[numFeatures];
+            for(int i = 0; i < numFeatures; i++){
+                userData[i] = Double.parseDouble(user[ 1 + featuresToInclude[i]]);
             }
             lst.add(userData);
             N = userData.length;
-            incrementer++;
         }
         double[][] returnDouble = new double[lst.size()][N];
         for(int i = 0; i < lst.size(); i++){
@@ -151,9 +150,9 @@ public class SimpleNeuralNetwork {
         }
         return returnDouble;
     }
-    public static ArrayList<String> getTestUsers(String state) throws FileNotFoundException {
+    public static ArrayList<String> getUsers(String data, String state) throws FileNotFoundException {
         ArrayList<String> users = new ArrayList<String>();
-        Scanner scanner = new Scanner(new File(FILEPATH + "\\data\\" + state + "_testing_answers.txt"));
+        Scanner scanner = new Scanner(new File(FILEPATH + "\\data\\" + state + "_" + data +  "_answers.txt"));
         while(scanner.hasNextLine()){
             String line = scanner.nextLine();
             String user = line.split("\t")[0];
@@ -170,60 +169,15 @@ public class SimpleNeuralNetwork {
             System.out.println();
         }
     }
-
-    //gonna do y = (x-mean/standard_deviation) for all these. Really uneven data.
-    public static double[] findMeans(double[][] double2DArray){
-        int numExamples = double2DArray.length;      //number of training examples
-        int numFeatures = double2DArray[0].length;    //number of features;
-        double[] means = new double[numFeatures];
-        for(int i = 0; i  < numFeatures; i++){
-            double mean = 0.0;
-            for(int j = 0; j < numExamples; j++){
-                mean += double2DArray[j][i];
-            }
-            mean = mean/numExamples;
-            means[i] = mean;
-        }
-        return means;
-    }
-    public static double[] findStandardDeviations(double[][] double2DArray){
-        int numExamples = double2DArray.length;      //number of training examples
-        int numFeatures = double2DArray[0].length;    //number of features;
-        double[] means = findMeans(double2DArray);
-        double[] sds = new double[numFeatures];
-        for(int i = 0; i < numFeatures; i++) {
-            double sdSum = 0;
-            double mean = means[i];
-            for (int j = 0; j < numExamples; j++) {
-                sdSum += Math.pow(double2DArray[j][i] - mean, 2);
-            }
-            sds[i] = Math.sqrt(sdSum/numExamples);
-        }
-        return sds;
-    }
-
-    public static double[][] standardizeData(double[][] double2DArray){
-        int numExamples = double2DArray.length;      //number of training examples
-        int numFeatures = double2DArray[0].length;
-        double[][] standardized2DArray = new double[numExamples][numFeatures];
-        double[] means = findMeans(double2DArray);
-        double[] sds = findStandardDeviations(double2DArray);
-        for(int i = 0; i < numFeatures; i++){
-            double mean = means[i];
-            double sd = sds[i];
-            for(int j = 0; j < numExamples; j++){
-                standardized2DArray[j][i] = (double2DArray[j][i] - mean)/sd;
-            }
-        }
-        return standardized2DArray;
-    }
-
+    //for sorting the results
     public static class UserResult implements Comparable<UserResult>{
         String userId;
         double resultNum;
-        public UserResult(String id, double rn){
+        double answer;
+        public UserResult(String id, double rn, double a){
             this.userId = id;
             this.resultNum = rn;
+            this.answer = a;
         }
 
         @Override
@@ -233,45 +187,175 @@ public class SimpleNeuralNetwork {
     }
 
 
-    public static void run(String state, int epochs, String activationFunction, int hiddenLayers, double learningRate, int batchSize) throws IOException, CloneNotSupportedException {
-        double[][] trainingData = readData("training", batchSize, state);
+    public static class NNRun implements Comparable<NNRun>{
+        NeuralNetwork model;
+        double precision;
+        double recall;
+        double accuracy;
+        double F;
+        public NNRun(NeuralNetwork model, double precision, double recall, double accuracy){
+            this.model = model;
+            this.precision = precision;
+            this.recall = recall;
+            this.accuracy = accuracy;
+            this.F = 2*(precision * recall)/(precision + recall);
+        }
+        @Override
+        public int compareTo(NNRun o) {
+            return Double.compare(this.F, o.F);
+        }
+        public void display(){
+            System.out.println("Neural Network Run");
+            System.out.println("\tPrecision: " + precision);
+            System.out.println("\tRecall: " + recall);
+            System.out.println("\tAccuracy: " + accuracy);
+            System.out.println("\tFScore: " + F);
+        }
+    }
+    public static NNRun runNeuralNetwork(String state, int[] featuresToInclude, int epochs, String activationFunction, int hiddenLayers, double learningRate) throws IOException, CloneNotSupportedException {
+        /**
+         * features to include:
+         * 0    avg cosine difference
+         * 1    avg reviewed business stars
+         * 2    avg difference b/t rating user gave and business stars
+         * 3    avg useful/reviewCount(business)
+         * 4    avg funny/reviewCount(business)
+         * 5    avg cool/reviewCount(business)
+         * 6    avg review count(business)
+         * 7    avg reviewed business longitude
+         * 8    avg reviewed business latitude
+         */
+        //Lowest one in OtherFeatures.java.
+        double[][] trainingData = readData("training", featuresToInclude, state);
         double[][] trainingAnswers = readAnswers("training", state);
-        double[][] standardizedData = standardizeData(trainingData);
-        NeuralNetwork nn = new NeuralNetwork(8, hiddenLayers, 1, learningRate);
-        nn.fit(standardizedData, trainingAnswers, epochs, activationFunction);
+        NeuralNetwork nn = new NeuralNetwork(6, hiddenLayers, 1, learningRate);
+        nn.fit(trainingData, trainingAnswers, epochs, activationFunction);
 
-        double[][] testingData = readData("testing", Integer.MAX_VALUE, "NV");
-        double[][] testingAnswers = readAnswers("testing", "NV");
+        double[][] validationData = readData("validation", featuresToInclude, state);
+        double[][] validationAnswers = readAnswers("validation", state);
         FileWriter writer = new FileWriter(FILEPATH + "data\\" + state + "_evaluation.txt");
-        double threshold = 0;
+        //get results for neural network.
+        double threshold;
         if(activationFunction.equals("sigmoid")){
             threshold = .5;
         }else{
             threshold = 0;
         }
         ArrayList<UserResult> results = new ArrayList<>();
-        ArrayList<String> users = getTestUsers("NV");
-        for(int i = 0; i < testingData.length; i++){
-            double output = nn.predict(testingData[i]).get(0);
-            double answer = testingAnswers[i][0];
-            writer.write(output + "\t" + answer + "\n");
+        ArrayList<String> users = getUsers("validation", state);
+        for(int i = 0; i < validationData.length; i++){
+            double output = nn.predict(validationData[i]).get(0);
+            double answer = validationAnswers[i][0];
             if(output > threshold){
-                results.add(new UserResult(users.get(i), output));
+                results.add(new UserResult(users.get(i), output, answer));
             }
         }
         writer.close();
+        //do precision, recall, accuracy.
+        double numResults = results.size();
+        double truePositive = 0;
+        for(UserResult ur: results){
+            if(ur.answer == 1){
+                truePositive++;
+            }
+        }
+        double falsePositive = numResults - truePositive;
+        double precision = truePositive/numResults;
+        double positiveTotal= 0;
+        for(double[] d: validationAnswers){
+            if(d[0] == 1){
+                positiveTotal ++;
+            }
+        }
+        double negativeTotal = validationAnswers.length - positiveTotal;
+        double falseNegative = positiveTotal - truePositive;
+        double trueNegative = negativeTotal - falseNegative;
+        double recall = truePositive/positiveTotal;
+        double accuracy = (truePositive+trueNegative)/(positiveTotal + negativeTotal);
+
+        /**
         //write a trec_eval file.
         Collections.sort(results);
         Collections.reverse(results);
-        FileWriter trecWriter = new FileWriter(FILEPATH + "evaluation\\"+ state + "_" + activationFunction + "_lr" + learningRate + "_h" + hiddenLayers + "_bs" + batchSize + ".txt");
+        FileWriter trecWriter = new FileWriter(FILEPATH + "evaluation\\"+ state + "_" + activationFunction + "_lr" + learningRate + "_h" + hiddenLayers + ".txt");
         for(int i = 0; i < results.size(); i++){
             UserResult result = results.get(i);
             trecWriter.write("1 0 " + state + "-" + result.userId + " " + (i + 1) + " " + result.resultNum + " " + activationFunction + "_lr" + learningRate + "_h" + hiddenLayers + "\n");
         }
         trecWriter.close();
+        System.out.println("results size: " + results.size());
+        System.out.println("Precision: " + precision+ " Recall: " + recall);
+         **/
+        return new NNRun(nn, precision, recall, accuracy);
 
     }
+    //trains a neural network and returns the run with the highest F score.
+    public static NNRun runNetworkNTimes(int numRuns, String state, int[] featuresToInclude, int epoch, String activationFunction, int hiddenLayers, double learningRate) throws IOException, CloneNotSupportedException {
+        ArrayList<NNRun> runs = new ArrayList<>();
+        for(int i = 0; i < numRuns; i++){
+            runs.add(runNeuralNetwork(state, featuresToInclude, epoch, activationFunction, hiddenLayers, learningRate));
+        }
+        Collections.sort(runs);
+        Collections.reverse(runs);
+        return runs.get(0);
+    }
+    //finds the best Neural Network model after training 100 times. Evaluates the result on a new dataset.
+    public static NNRun evaluateBestNN(String state, int[] featuresToInclude, int epoch, String activationFunction, int hiddenLayers, double learningRate) throws IOException, CloneNotSupportedException {
+        NeuralNetwork nn = runNetworkNTimes(100, state, featuresToInclude, epoch, activationFunction, hiddenLayers, learningRate).model;
+        double[][] testingData = readData("testing", featuresToInclude, state);
+        double[][] testingAnswers = readAnswers("testing", state);
+        FileWriter writer = new FileWriter(FILEPATH + "data\\" + state + "_evaluation.txt");
+        //get results for neural network.
+        double threshold;
+        if(activationFunction.equals("sigmoid")){
+            threshold = .5;
+        }else{
+            threshold = 0;
+        }
+        ArrayList<UserResult> results = new ArrayList<>();
+        ArrayList<String> users = getUsers("testing", state);
+        for(int i = 0; i < testingData.length; i++){
+            double output = nn.predict(testingData[i]).get(0);
+            double answer = testingAnswers[i][0];
+            if(output > threshold){
+                results.add(new UserResult(users.get(i), output, answer));
+            }
+        }
+        writer.close();
+        //do precision, recall, accuracy.
+        double numResults = results.size();
+        double truePositive = 0;
+        for(UserResult ur: results){
+            if(ur.answer == 1){
+                truePositive++;
+            }
+        }
+        double falsePositive = numResults - truePositive;
+        double precision = truePositive/numResults;
+        double positiveTotal= 0;
+        for(double[] d: testingAnswers){
+            if(d[0] == 1){
+                positiveTotal ++;
+            }
+        }
+        double negativeTotal = testingAnswers.length - positiveTotal;
+        double falseNegative = positiveTotal - truePositive;
+        double trueNegative = negativeTotal - falseNegative;
+        double recall = truePositive/positiveTotal;
+        double accuracy = (truePositive+trueNegative)/(positiveTotal + negativeTotal);
+         //write a trec_eval file.
+         Collections.sort(results);
+         Collections.reverse(results);
+         FileWriter trecWriter = new FileWriter(FILEPATH + "evaluation\\"+ state + "_" + activationFunction + "_lr" + learningRate + "_h" + hiddenLayers + ".txt");
+         for(int i = 0; i < results.size(); i++){
+         UserResult result = results.get(i);
+         trecWriter.write("1 0 " + state + "-" + result.userId + " " + (i + 1) + " " + result.resultNum + " " + activationFunction + "_lr" + learningRate + "_h" + hiddenLayers + "\n");
+         }
+         trecWriter.close();
+         return new NNRun(nn, precision, recall, accuracy);
+    }
     public static void main(String[] args) throws IOException, CloneNotSupportedException {
-        run("NV", 10000, "gaussian", 4, .001, 1000);
+        NNRun best = evaluateBestNN("NV", new int[] {0, 1, 2, 6, 7, 8}, 10000, "sigmoid", 16, .001);
+        best.display();
     }
 }
