@@ -9,8 +9,10 @@ import java.util.Locale;
 import java.util.Scanner;
 import java.util.Collections;
 
+//Timothy Niles
+//Business Object class
 
-//Task1 Algorithm 1. Uses AVG star rating multiplied by total number of reviews to rank
+//Task1 Includes Algorithm 1 and 2.
 public class Business implements Comparable<Business> {
 
     public String BID;
@@ -21,10 +23,12 @@ public class Business implements Comparable<Business> {
     public String Bcategory;
     public Long BreviewCount;
     public Integer Btotal;
+    public Integer cfuComments;
+    public Integer RevScore;
 
 
 
-    public Business(String ID, String name, String state, String city,String category, Double stars, Long reviewCount){
+    public Business(String ID, String name, String state, String city,String category, Double stars, Long reviewCount) throws IOException, ParseException {
         this.BID = ID;
         this.Bname = name;
         this.Bstate = state;
@@ -32,11 +36,26 @@ public class Business implements Comparable<Business> {
         this.Bcategory = category;
         this.Bstars = stars;
         this.BreviewCount = reviewCount;
+        this.cfuComments = 0;
 
 
-
+        //Algoritm 1 Score
         Double doubleTotal = stars * reviewCount;
         this.Btotal =  (int) Math.round(doubleTotal);
+
+        //For Algorithm 2. Takes extremely long to calculate each score
+       /* ArrayList<Review> reviews = Review.getReviews();
+        for(int i = 0; i < reviews.size(); i++){
+            Review r = reviews.get(i);
+            if(r.bID.equals(this.BID)){
+                this.cfuComments += r.commentTotal;
+            }
+            System.out.println(this.cfuComments);
+        }
+        this.RevScore = (int) (cfuComments / this.Bstars);
+
+        */
+
 
     }
 
@@ -61,17 +80,15 @@ public class Business implements Comparable<Business> {
 
 
             documents.add(B);
-            //System.out.println(B.BID + ": " + B.Bname + ": " + B.Btotal);
         }
         return documents;
     }
 
 
-    public static void getBusiness(){
 
-    }
-
-    @Override
+    //Algorithm 1 comparison ranking
+    // Uses AVG star rating multiplied by total number of reviews to rank
+   @Override
     public int compareTo(Business b){
         return Integer.compare(this.Btotal, b.Btotal);
     }
@@ -80,12 +97,48 @@ public class Business implements Comparable<Business> {
         System.out.println(rank + ". " + b.Bname + ", Stars: " + Math.round(b.Bstars) + ", Review Count: " + b.BreviewCount +  ", Score: " + b.Btotal);
     }
 
+    //Algorithm 2 comparison ranking
+    //Uses total number of funny, cool, and useful comments from review divided by avg business stars
+    /*@Override
+    public int compareTo(Business b){
+        return Integer.compare(this.RevScore, b.RevScore);
+    }
+
+    public static void display(Business b, Integer rank){ //prints each business based on user query and rank
+        System.out.println(rank + ". " + b.Bname + ", Stars: " + Math.round(b.Bstars) + ", Cool, Funny, Useful Comments: " + b.cfuComments +  ", Score: " + b.RevScore);
+    }*/
+
+    //get businesses list
     public static ArrayList getBusinesses()throws IOException, ParseException{
         ArrayList<Business> businesses = fileParser("D:\\yelp_academic_dataset_business.json");
         return businesses;
     }
 
+    //alg 1 test
+    public static void algOneTest(ArrayList bus){
+        Boolean test = false;
+        ArrayList<Business> businessesUpdated = bus;
+        Business b = businessesUpdated.get(0);
+        if (b.BID.equals("e4NQLZynhSmvwl38hC4m-A") && b.Btotal == 6129) {
+            test = true;
 
+        }
+        System.out.println(test);
+    }
+
+    //alg2 test
+    /*public static void algTwoTest(ArrayList bus){
+        Boolean test = false;
+        ArrayList<Business> businessesUpdated = bus;
+            Business b = businessesUpdated.get(0);
+            if (b.BID.equals("e4NQLZynhSmvwl38hC4m-A") && b.Btotal == 6129) {
+                test = true;
+
+        }
+        System.out.println(test);
+    }
+
+     */
 
     public static void main(String[] args)throws IOException, ParseException{
 
@@ -110,7 +163,6 @@ public class Business implements Comparable<Business> {
         System.out.println("Searching for: " + category + " in " + location + " with " + rating + " star(s).");
 
 
-
         for(int i = 0; i < businesses.size(); i++){
             Business b = businesses.get(i);
             int intStars = (int) Math.round(b.Bstars);
@@ -122,16 +174,13 @@ public class Business implements Comparable<Business> {
                //}
             }
         }
-
-
         for(int i = 0; i < businessesUpdated.size(); i++) {
             Business b = businessesUpdated.get(i);
             display(b, (i+1));;
         }
 
-
+        algOneTest(businessesUpdated);
+        //algTwoTest(businessesUpdated);
 
     }
-
-
 }

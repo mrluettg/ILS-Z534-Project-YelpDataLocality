@@ -1,1 +1,0 @@
-1 0 NV-ax7SnXOTIpatbsmqHLqVow 1 0.6828618346985385 sigmoid_lr0.001_h6

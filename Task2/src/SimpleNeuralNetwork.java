@@ -221,7 +221,7 @@ public class SimpleNeuralNetwork {
         //Lowest one in OtherFeatures.java.
         double[][] trainingData = readData("training", featuresToInclude, state);
         double[][] trainingAnswers = readAnswers("training", state);
-        NeuralNetwork nn = new NeuralNetwork(6, hiddenNodes, 1, learningRate);
+        NeuralNetwork nn = new NeuralNetwork(featuresToInclude.length, hiddenNodes, 1, learningRate);
         nn.fit(trainingData, trainingAnswers, epochs, activationFunction);
 
         double[][] validationData = readData("validation", featuresToInclude, state);
@@ -364,8 +364,23 @@ public class SimpleNeuralNetwork {
          * 7    avg reviewed business longitude
          * 8    avg reviewed business latitude
          */
-        NNRun best = evaluateBestNN("NV", new int[] {0, 1, 2, 6, 7, 8}, 10000, "sigmoid", 81, .001);
-        System.out.println("Best NN on testing: ");
-        best.display();
+        //NNRun best = evaluateBestNN("NV", new int[] {0, 1, 2, 3, 4, 6, 7, 8}, 10000, "sigmoid", 81, .001);
+        //System.out.println("Best NN on testing: ");
+        //best.display();
+
+
+        //run it 10 times and take average.
+        double avgPrecision = 0;
+        double avgRecall = 0;
+        double avgF = 0;
+        for(int i = 0; i < 10; i++){
+            NNRun nnr = evaluateBestNN("NV", new int[] {0, 1, 2, 3, 4, 6, 7, 8}, 10000, "sigmoid", 81, .001);
+            avgPrecision += nnr.precision/10.0;
+            avgRecall += nnr.recall/10.0;
+            avgF += nnr.F/10.0;
+        }
+        System.out.println("average precision: " + avgPrecision);
+        System.out.println("average recall: " + avgRecall);
+        System.out.println("average F: " + avgF);
     }
 }
